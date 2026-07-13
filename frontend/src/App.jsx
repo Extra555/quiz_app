@@ -65,7 +65,22 @@ function Builder({ navigate }) {
 
 function Host({ room, navigate }) {
   const [state, setState] = useState({ players: [], status: 'lobby' }); const [result, setResult] = useState(null); const socket = useMemo(() => io(import.meta.env.VITE_SOCKET_URL || undefined), [])
-  useEffect(() => { socket.emit('host:authorize', { code: room.code, token: localStorage.getItem('quizy_token') }, (r) => r.ok && setState(r.session)); socket.on('session:state', setState); socket.on('game:finished', (r) => setResult(r)); return () => socket.disconnect() }, [room.code, socket])
+  useEffect(() => {
+    const handleState = (nextState) => setState(nextState)
+    const handleFinished = (nextResult) => setResult(nextResult)
+    const authorize = () => socket.emit('host:authorize', { code: room.code, token: localStorage.getItem('quizy_token') }, (response) => response.ok && setState(response.session))
+    socket.on('connect', authorize)
+    socket.on('session:state', handleState)
+    socket.on('game:finished', handleFinished)
+    if (socket.connected) authorize()
+    else socket.connect()
+    return () => {
+      socket.off('connect', authorize)
+      socket.off('session:state', handleState)
+      socket.off('game:finished', handleFinished)
+      socket.disconnect()
+    }
+  }, [room.code, socket])
   const action = () => socket.emit(state.status === 'lobby' ? 'host:start' : 'host:next', { code: room.code })
   return <section className="screen narrow"><article className="toy-card lobby"><span className="eyebrow">КОМНАТА ГОТОВА</span><h1>Код игры</h1><div className="room-code">{room.code}</div><p>Игроки вводят этот код на главной странице</p><div className="players">{state.players?.map((p) => <span key={p.id}>{p.connected ? '●' : '○'} {p.name} · {p.score}</span>)}{!state.players?.length && <em>Ждём первых игроков…</em>}</div>{result ? <Leaderboard data={result.leaderboard} /> : <button className="btn lime wide" disabled={!state.players?.length || state.status === 'question'} onClick={action}>{state.status === 'lobby' ? 'Начать игру ▶' : state.status === 'reveal' ? 'Следующий вопрос ▶' : 'Вопрос идёт…'}</button>}<button className="text-button" onClick={() => navigate('home')}>Завершить и на главную</button></article></section>
 }
@@ -74,7 +89,35 @@ function Leaderboard({ data }) { return <div className="leaderboard"><h2>🏆 Л
 
 function Game({ initialJoin, user, navigate }) {
   const [join, setJoin] = useState({ code: initialJoin?.code || '', name: user?.name || '' }); const [connected, setConnected] = useState(false); const [session, setSession] = useState(null); const [question, setQuestion] = useState(null); const [selected, setSelected] = useState([]); const [result, setResult] = useState(null); const [seconds, setSeconds] = useState(0); const [error, setError] = useState(''); const socket = useMemo(() => io(import.meta.env.VITE_SOCKET_URL || undefined, { autoConnect: false }), [])
-  useEffect(() => { const rejoin = () => { const payload = socket.auth?.join; if (payload) socket.emit('session:join', payload, (r) => { if (r.ok) { localStorage.setItem(`quizy_player_${payload.code}`, r.playerId); socket.auth.join.playerId = r.playerId; setSession(r.session); setConnected(true) } }) }; socket.on('connect', rejoin); socket.on('session:state', setSession); socket.on('question:started', (data) => { setQuestion(data); setSelected([]); setResult(null) }); socket.on('question:result', setResult); socket.on('game:finished', (r) => { setResult({ ...r, finished: true }); setQuestion(null) }); return () => socket.disconnect() }, [socket])
+  useEffect(() => {
+    const rejoin = () => {
+      const payload = socket.auth?.join
+      if (payload) socket.emit('session:join', payload, (response) => {
+        if (!response.ok) return setError(response.error)
+        localStorage.setItem(`quizy_player_${payload.code}`, response.playerId)
+        socket.auth.join.playerId = response.playerId
+        setSession(response.session)
+        setConnected(true)
+      })
+    }
+    const handleState = (nextState) => setSession(nextState)
+    const handleQuestion = (data) => { setQuestion(data); setSelected([]); setResult(null) }
+    const handleResult = (data) => setResult(data)
+    const handleFinished = (data) => { setResult({ ...data, finished: true }); setQuestion(null) }
+    socket.on('connect', rejoin)
+    socket.on('session:state', handleState)
+    socket.on('question:started', handleQuestion)
+    socket.on('question:result', handleResult)
+    socket.on('game:finished', handleFinished)
+    return () => {
+      socket.off('connect', rejoin)
+      socket.off('session:state', handleState)
+      socket.off('question:started', handleQuestion)
+      socket.off('question:result', handleResult)
+      socket.off('game:finished', handleFinished)
+      socket.disconnect()
+    }
+  }, [socket])
   useEffect(() => { if (!question?.endsAt) return; const tick = () => setSeconds(Math.max(0, Math.ceil((question.endsAt - Date.now()) / 1000))); tick(); const timer = setInterval(tick, 250); return () => clearInterval(timer) }, [question])
   const connect = (e) => { e.preventDefault(); setError(''); socket.auth = { join: { ...join, token: localStorage.getItem('quizy_token'), playerId: localStorage.getItem(`quizy_player_${join.code}`) } }; const submitJoin = () => socket.emit('session:join', socket.auth.join, (r) => { if (!r.ok) return setError(r.error); localStorage.setItem(`quizy_player_${join.code}`, r.playerId); socket.auth.join.playerId = r.playerId; setSession(r.session); setConnected(true) }); if (socket.connected) submitJoin(); else socket.connect() }
   const choose = (id) => { if (question.question.answerType === 'single') setSelected([id]); else setSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]) }

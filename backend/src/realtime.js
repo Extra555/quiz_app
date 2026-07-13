@@ -55,7 +55,8 @@ export function attachRealtime(io) {
       if (!session) return reply({ ok: false, error: 'Комната не найдена' })
       let userId = null
       try { userId = token ? verifyToken(token).sub : null } catch { /* guest */ }
-      const stableId = playerId && session.players.has(playerId) ? playerId : crypto.randomUUID()
+      const playerOnThisSocket = [...session.players.values()].find((player) => player.socketId === socket.id)
+      const stableId = playerOnThisSocket?.id || (playerId && session.players.has(playerId) ? playerId : crypto.randomUUID())
       const previous = session.players.get(stableId)
       session.players.set(stableId, { id: stableId, userId: previous?.userId || userId, name: previous?.name || String(name || 'Игрок').slice(0, 30), score: previous?.score || 0, correctAnswers: previous?.correctAnswers || 0, connected: true, socketId: socket.id })
       socket.data = { sessionId: session.id, playerId: stableId }
