@@ -23,7 +23,9 @@ export const store = {
       questions: input.questions.map((question, index) => ({
         id: id(), position: index, prompt: question.prompt.trim(), mediaType: question.mediaType || 'text',
         imageUrl: question.imageUrl || '', answerType: question.answerType || 'single',
-        options: question.options.map((option) => ({ id: id(), text: option.text.trim(), correct: Boolean(option.correct) })),
+        options: question.options
+          .filter((option) => option.text?.trim())
+          .map((option) => ({ id: id(), text: option.text.trim(), correct: Boolean(option.correct) })),
         timeLimit: Math.min(120, Math.max(5, Number(question.timeLimit) || 20)), points: Number(question.points) || 1000,
       })),
     }
@@ -39,7 +41,7 @@ export const store = {
   },
   findSessionByCode(code) { return [...sessions.values()].find((session) => session.code === code) },
   publicQuiz(quiz) {
-    return { ...quiz, questions: quiz.questions.map((q) => ({ ...q, options: q.options.map(({ correct: _correct, ...o }) => o) })) }
+    return { ...quiz, questions: quiz.questions.map((q) => ({ ...q, options: q.options.filter((o) => o.text?.trim()).map(({ correct: _correct, ...o }) => o) })) }
   },
 }
 
