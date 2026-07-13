@@ -9,19 +9,50 @@ function Logo() {
   return <button className="logo" onClick={() => location.assign('/')} aria-label="Quizy, на главную"><img className="logo-image" src="/main_logo.png" alt="Quizy — квизы" /></button>
 }
 
-function Shell({ user, onNavigate, onLogout, children }) {
-  return <main className="app-shell"><div className="confetti" /><header><Logo /><nav><button onClick={() => onNavigate('home')}>Главная</button>{user && <button onClick={() => onNavigate('profile')}>Мои игры</button>}{user ? <button className="nav-pill" onClick={onLogout}>Выйти · {user.name}</button> : <button className="nav-pill" onClick={() => onNavigate('auth')}>Войти</button>}</nav></header>{children}<footer>Quizy © 2026 · Собирайте друзей и отвечайте ярко</footer></main>
+function Shell({ page, user, onNavigate, onLogout, children }) {
+  const showHeader = page !== 'home'
+  return <main className={`app-shell page-${page}`}>
+    <div className="confetti" aria-hidden="true" />
+    {showHeader && <header className="app-header">
+      {page !== 'auth' && <Logo />}
+      <nav>
+        {user && page !== 'profile' && <button type="button" onClick={() => onNavigate('profile')}>Мои игры</button>}
+        {user && page === 'profile' && <button type="button" onClick={onLogout}>Выйти · {user.name}</button>}
+        <button type="button" className="nav-pill" onClick={() => onNavigate('home')}>← Назад</button>
+      </nav>
+    </header>}
+    {children}
+  </main>
 }
 
 function Home({ user, navigate, setJoin }) {
   const [code, setCode] = useState('')
-  return <section className="screen home"><div className="game-board"><div className="home-language">◉ <b>RU</b>⌄</div><div className="board-spark spark-one">✦</div><div className="board-spark spark-two">◆</div><div className="home-brand"><Logo /><span>КВИЗЫ</span></div><div className="mode-tabs"><button className="active">БЫСТРАЯ ИГРА</button><button onClick={() => navigate(user ? 'profile' : 'auth')}>С АВТОРИЗАЦИЕЙ</button></div><div className="home-panels"><article className="home-panel create-panel"><img className="panel-art robot-art" src="/robot.png" alt="Весёлый робот Quizy" /><div className="create-copy"><span className="panel-kicker">СОЗДАЙ СВОЮ ИГРУ</span><h1>Новый<br />квиз!</h1><p>Придумай вопросы и позови друзей.</p></div><button className="btn lime mega" onClick={() => navigate(user ? 'builder' : 'auth')}><Icon>▶</Icon> СОЗДАТЬ КВИЗ</button></article><article className="home-panel join-panel"><h2>КАК ИГРАТЬ</h2><img className="panel-art tablet-art" src="/tablet_and_pen.png" alt="Планшет с вопросами" /><p className="how-copy"><b>1. ПОЛУЧИ КОД У ВЕДУЩЕГО.</b><br />Введи шесть цифр и присоединяйся к друзьям!</p><div className="join-box"><label><span>КОД ИГРЫ</span><input aria-label="Код комнаты" maxLength="6" inputMode="numeric" placeholder="000 000" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} /></label><button className="btn cyan mega" disabled={code.length !== 6} onClick={() => { setJoin({ code }); navigate('game') }}>ИГРАТЬ <Icon>▶</Icon></button></div></article></div><div className="board-footer"><button>УСЛОВИЯ ИСПОЛЬЗОВАНИЯ</button><button>КОНФИДЕНЦИАЛЬНОСТЬ</button><button>КАК ИГРАТЬ</button><button>СВЯЗАТЬСЯ</button></div></div></section>
+  return <section className="screen home"><div className="game-board">
+    <div className="home-brand"><Logo /></div>
+    <div className="mode-tabs">
+      <button type="button" className="active" onClick={() => document.querySelector('.join-box input')?.focus()}>БЫСТРАЯ ИГРА</button>
+      <button type="button" onClick={() => navigate(user ? 'profile' : 'auth')}>С АВТОРИЗАЦИЕЙ</button>
+    </div>
+    <div className="home-panels">
+      <article className="home-panel create-panel">
+        <img className="panel-art character" src="/dino_logo.png" alt="Персонаж" />
+        <div className="create-copy"><span className="panel-kicker">СОЗДАЙ СВОЮ ИГРУ</span><h1>Новый<br />квиз!</h1><p>Придумай вопросы и позови друзей.</p></div>
+        <button className="btn lime mega" onClick={() => navigate(user ? 'builder' : 'auth')}><Icon>▶</Icon> СОЗДАТЬ КВИЗ</button>
+      </article>
+      <article className="home-panel join-panel">
+        <h2>КАК ИГРАТЬ</h2>
+        <img className="panel-art bird-art" src="/bird logo3.png" alt="Птица с планшетом рисует" />
+        <p className="how-copy"><b>ПОЛУЧИ КОД У ВЕДУЩЕГО.</b><br />Введи шесть цифр и присоединяйся к друзьям!</p>
+        <div className="join-box"><label><span>КОД ИГРЫ</span><input aria-label="Код комнаты" maxLength="6" inputMode="numeric" placeholder="000 000" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} /></label><button className="btn cyan mega" disabled={code.length !== 6} onClick={() => { setJoin({ code }); navigate('game') }}>ИГРАТЬ <Icon>▶</Icon></button></div>
+      </article>
+    </div>
+  </div></section>
 }
 
 function Auth({ onDone }) {
   const [mode, setMode] = useState('login'); const [form, setForm] = useState({ name: '', email: '', password: '' }); const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
   const submit = async (e) => { e.preventDefault(); setBusy(true); setError(''); try { const data = await api(`/auth/${mode}`, { method: 'POST', body: JSON.stringify(form) }); localStorage.setItem('quizy_token', data.token); onDone(data.user) } catch (err) { setError(err.message) } finally { setBusy(false) } }
-  return <section className="screen narrow"><article className="toy-card form-card"><div className="tabs"><button className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Вход</button><button className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>Регистрация</button></div><h1>{mode === 'login' ? 'С возвращением!' : 'Новый игрок'}</h1><form onSubmit={submit}>{mode === 'register' && <label>Имя игрока<input required maxLength="80" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Как вас зовут?" /></label>}<label>Email<input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" /></label><label>Пароль<input required minLength="6" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Минимум 6 символов" /></label>{error && <p className="error">⚠ {error}</p>}<button className="btn lime wide" disabled={busy}>{busy ? 'Загрузка…' : mode === 'login' ? 'Войти в Quizy' : 'Создать аккаунт'}</button></form></article></section>
+  return <section className="screen narrow auth-screen"><article className="toy-card form-card"><div className="tabs"><button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Вход</button><button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => setMode('register')}>Регистрация</button></div><h1>{mode === 'login' ? 'С возвращением!' : 'Новый игрок'}</h1><form onSubmit={submit}>{mode === 'register' && <label>Имя игрока<input required maxLength="80" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Как вас зовут?" /></label>}<label>Email<input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" /></label><label>Пароль<input required minLength="6" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Минимум 6 символов" /></label>{error && <p className="error">⚠ {error}</p>}<button className="btn lime wide" disabled={busy}>{busy ? 'Загрузка…' : mode === 'login' ? 'Войти в Quizy' : 'Создать аккаунт'}</button></form></article></section>
 }
 
 function Builder({ navigate }) {
@@ -64,5 +95,5 @@ export default function App() {
   useEffect(() => { if (localStorage.getItem('quizy_token')) api('/auth/me').then((r) => setUser(r.user)).catch(() => localStorage.removeItem('quizy_token')) }, [])
   const navigate = (next, data) => { setPage(next); setContext(data || null); scrollTo(0, 0) }
   const logout = () => { localStorage.removeItem('quizy_token'); setUser(null); navigate('home') }
-  return <Shell user={user} onNavigate={navigate} onLogout={logout}>{page === 'home' && <Home user={user} navigate={navigate} setJoin={setJoin} />}{page === 'auth' && <Auth onDone={(u) => { setUser(u); navigate('home') }} />}{page === 'builder' && <Builder navigate={navigate} />}{page === 'host' && <Host room={context} navigate={navigate} />}{page === 'game' && <Game initialJoin={join} user={user} navigate={navigate} />}{page === 'profile' && <Profile navigate={navigate} />}</Shell>
+  return <Shell page={page} user={user} onNavigate={navigate} onLogout={logout}>{page === 'home' && <Home user={user} navigate={navigate} setJoin={setJoin} />}{page === 'auth' && <Auth onDone={(u) => { setUser(u); navigate('home') }} />}{page === 'builder' && <Builder navigate={navigate} />}{page === 'host' && <Host room={context} navigate={navigate} />}{page === 'game' && <Game initialJoin={join} user={user} navigate={navigate} />}{page === 'profile' && <Profile navigate={navigate} />}</Shell>
 }
