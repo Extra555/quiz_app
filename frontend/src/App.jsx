@@ -30,7 +30,7 @@ function Home({ user, navigate, setJoin }) {
   return <section className="screen home"><div className="game-board">
     <div className="home-brand"><Logo /></div>
     <button type="button" className="account-entry" onClick={() => navigate(user ? 'profile' : 'auth')}>
-      {user ? `👤 ${user.name}` : '👤 Войти / зарегистрироваться'}
+      {user ? '👤 Личный кабинет' : '👤 Авторизация'}
     </button>
     <div className="home-panels">
       <article className="home-panel create-panel">
@@ -81,7 +81,7 @@ function Host({ room, navigate }) {
     }
   }, [room.code, socket])
   const action = () => socket.emit(state.status === 'lobby' ? 'host:start' : 'host:next', { code: room.code })
-  return <section className="screen narrow"><article className="toy-card lobby"><span className="eyebrow">КОМНАТА ГОТОВА</span><h1>Код игры</h1><div className="room-code">{room.code}</div><p>Игроки вводят этот код на главной странице</p><div className="players">{state.players?.map((p) => <span key={p.id}>{p.connected ? '●' : '○'} {p.name}</span>)}{!state.players?.length && <em>Ждём первых игроков…</em>}</div>{result ? <Leaderboard data={result.leaderboard} /> : <button className="btn lime wide" disabled={!state.players?.length || state.status === 'question'} onClick={action}>{state.status === 'lobby' ? 'Начать игру ▶' : state.status === 'reveal' ? 'Следующий вопрос ▶' : 'Вопрос идёт…'}</button>}<button className="text-button" onClick={() => navigate('home')}>Завершить и на главную</button></article></section>
+  return <section className="screen narrow"><article className="toy-card lobby"><span className="eyebrow">КОМНАТА ГОТОВА</span><h1>Код игры</h1><div className="room-code">{room.code}</div><p>Игроки вводят этот код на главной странице</p><div className="players">{state.players?.map((p) => <span key={p.id}>{p.name}</span>)}{!state.players?.length && <em>Ждём первых игроков…</em>}</div>{result ? <Leaderboard data={result.leaderboard} /> : <button className="btn lime wide" disabled={!state.players?.length || state.status === 'question'} onClick={action}>{state.status === 'lobby' ? 'Начать игру ▶' : state.status === 'reveal' ? 'Следующий вопрос ▶' : 'Вопрос идёт…'}</button>}<button className="text-button" onClick={() => navigate('home')}>Завершить и на главную</button></article></section>
 }
 
 function Leaderboard({ data }) { return <div className="leaderboard"><h2>🏆 Лидерборд</h2>{data.map((p, i) => <div className={`rank rank-${i + 1}`} key={p.id}><b>{i + 1}</b><span>{p.name}</span><strong>{p.score}</strong></div>)}</div> }

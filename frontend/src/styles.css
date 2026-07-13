@@ -132,4 +132,11 @@ html,body,#root{min-height:100%;margin:0}.app-shell:has(.home){height:100dvh;min
 @media(max-height:650px) and (min-width:821px){.account-entry{top:132px}.home-panels{top:174px}}
 @media(max-width:820px){.account-entry{top:126px;right:14px;padding:8px 12px;font-size:12px}.quiz-history{align-items:stretch;flex-direction:column}.launch-quiz{width:100%}}
 
+/* Refined decorative layer and clearer controls. */
+.confetti{display:block!important;z-index:6!important;opacity:.55!important;background-image:radial-gradient(circle,#ffe537 0 3px,transparent 4px),radial-gradient(circle,#ff4db8 0 3px,transparent 4px),radial-gradient(circle,#35e8ff 0 3px,transparent 4px),radial-gradient(circle,#83ef43 0 3px,transparent 4px),linear-gradient(35deg,transparent 36%,#ffe537 37% 63%,transparent 64%),linear-gradient(145deg,transparent 36%,#ff4db8 37% 63%,transparent 64%),linear-gradient(65deg,transparent 36%,#35e8ff 37% 63%,transparent 64%);background-position:7% 13%,91% 18%,13% 78%,86% 73%,22% 24%,77% 34%,55% 12%;background-size:9px 9px,9px 9px,9px 9px,9px 9px,14px 14px,14px 14px,14px 14px;background-repeat:no-repeat;animation:confetti-float 5s ease-in-out infinite alternate}
+.account-entry{top:112px;right:26px}.btn.cyan,.cyan{color:#08205f;text-shadow:0 1px 0 #ffffffaa}.btn.cyan:disabled,.cyan:disabled{color:#193672;opacity:.72}
+.game-board::before{opacity:.1}.create-panel::after,.join-panel::after{opacity:.12}
+@media(max-height:650px) and (min-width:821px){.account-entry{top:94px}}
+@media(max-width:820px){.account-entry{top:98px;right:14px}}
+
 
